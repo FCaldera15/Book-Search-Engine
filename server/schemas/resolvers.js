@@ -1,5 +1,5 @@
 const { AuthenticationError } = require('apollo-server-express');
-const { User, Book } = require('../models');
+const { User } = require('../models');
 const { signToken } = require('../utils/auth');
 
 const resolvers = {
@@ -38,34 +38,33 @@ const resolvers = {
     },
 
     saveBook: async (parent, args, context) => {
-      const user = await User.findById(userId);
-      if (!context.user) {
-        throw new Error('User not found');
-      }
-
-      user.savedBooks.push(book);
-      await user.save();
-
-      return user;
-    },
-
-    removeBook: async (parent, { bookId }, context) => {
       if (context.user) {
-        const book = await User.findOneAndDelete({
-          _id: bookId,
-          bookAuthor: context.user.username,
-        });
-
-        await User.findOneAndUpdate(
+        const saveBooks = await User.findOneAndUpdate(
           { _id: context.user._id },
-          { $pull: { books: book._id } }
+          { $addToSet: { savedBooks: { ...args } } },
+          { new: true, runValidators: true }
         );
-
-        return book;
+        if (!context.user) {
+          throw new AuthenticationError('You need to be logged in!');
+        }
+        return saveBooks;
       }
-      throw new AuthenticationError('You need to be logged in!');
     },
-  },
-};
+
+    removeBook: async (parent, args, context) => {
+      if (context.user) {
+        const deleteBooks = await User.findOneAndUpdate(
+          { _id: context.user._id },
+          { $pull: { savedBooks: { ...args } } },
+          { new: true }
+        );
+        if (!context.user) {
+          throw new AuthenticationError('You need to be logged in!');
+        }
+        return deleteBooks;
+      }
+    },
+  }
+}
 
 module.exports = resolvers;
