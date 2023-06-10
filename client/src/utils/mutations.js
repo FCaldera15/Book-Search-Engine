@@ -25,7 +25,7 @@ mutation addUser($username: String!, $email: String!, $password: String!) {
 `;
 
 export const LOGIN_USER = gql`
-mutation loginUser($email: String!, $password: String!) {
+mutation login($email: String!, $password: String!) {
     login(email: $email, password: $password) {
         token
     user {
